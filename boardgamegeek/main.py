@@ -4,6 +4,7 @@ import argparse
 import logging
 
 from boardgamegeek.api import BGGClient, HOT_ITEM_CHOICES
+from boardgamegeek import BGGClientLegacy
 
 log = logging.getLogger("boardgamegeek")
 log_fmt = "[%(levelname)s] %(message)s"
@@ -53,6 +54,10 @@ def main():
     p.add_argument("-P", "--plays-by-game", help="Query a game's plays")
     p.add_argument("-H", "--hot-items", help="List all hot items by type", choices=HOT_ITEM_CHOICES)
     p.add_argument("-S", "--search", help="search and return results")
+
+    p.add_argument("-l", "--geeklist", type=int, help="get geeklist by id")
+    p.add_argument("--nocomments", help="disable getting the comments with geeklist", action="store_true")
+
     p.add_argument("--debug", action="store_true")
     p.add_argument("--retries", help="number of retries to perform in case of timeout or API HTTP 202 code",
                    type=int,
@@ -81,7 +86,9 @@ def main():
         log.debug("fetching items: {}% complete".format(items*100/total))
 
     if not any([args.user, args.game, args.id, args.guild, args.collection,
-                args.plays, args.plays_by_game, args.hot_items, args.search]):
+                args.plays, args.plays_by_game, args.hot_items, args.search,
+                args.geeklist
+                ]):
         p.error("no action specified!")
 
     bgg = BGGClient(timeout=args.timeout, retries=args.retries)
@@ -141,6 +148,12 @@ def main():
         for r in results:
             r._format(log)
             log.info("")
+
+    oldbgg = BGGClientLegacy(timeout=args.timeout, retries=args.retries)
+
+    if args.geeklist:
+        geeklist = oldbgg.geeklist(args.geeklist, comments=not args.nocomments)
+        geeklist._format(log)
 
 if __name__ == "__main__":
     main()

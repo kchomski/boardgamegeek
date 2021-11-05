@@ -878,7 +878,7 @@ class BGGClient(BGGCommon):
         while added_items and len(game.comments) < total:
             page += 1
 
-            params['page'] = page
+            params["page"] = page
             xml_root = request_and_parse_xml(self.requests_session,
                                              self._thing_api_url,
                                              params={"id": game_id,

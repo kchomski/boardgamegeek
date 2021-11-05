@@ -37,7 +37,7 @@ except ImportError: # Python 2
     import HTMLParser
     html_unescape = HTMLParser.HTMLParser().unescape
 
-from .exceptions import BGGApiError, BGGApiRetryError, BGGError, BGGApiTimeoutError
+from .exceptions import BGGApiError, BGGApiRetryError, BGGError, BGGApiTimeoutError, BGGItemNotFoundError
 
 log = logging.getLogger("boardgamegeek.utils")
 
@@ -335,6 +335,10 @@ def request_and_parse_xml(requests_session, url, params=None, timeout=15, retrie
                         time.sleep(retry_delay)
                         retry_delay *= 1.5
                     continue
+            elif r.status_code == 404:
+                # Legacy API returns a 404 when geeklist is not found
+                log.warning("API returned 404, aborting")
+                raise BGGItemNotFoundError("data not found")
             elif r.status_code == 503:
                 # it seems they added some sort of protection which triggers when too many requests are made, in which
                 # case we get back a 503. Try to delay and retry
@@ -371,7 +375,7 @@ def request_and_parse_xml(requests_session, url, params=None, timeout=15, retrie
         except ETParseError as e:
             raise BGGApiError("error decoding BGG API response: {}".format(e))
 
-        except (BGGApiRetryError, BGGApiTimeoutError):
+        except (BGGApiRetryError, BGGApiTimeoutError, BGGItemNotFoundError):
             raise
 
         except Exception as e:
